@@ -64,24 +64,98 @@ type GeocoderDB struct {
 
 // Map catalog to resolve region codes to download paths
 var mapCatalog = map[string]string{
-	"planet":        "",
-	"europe":        "europe",
-	"north-america": "north-america",
-	"hu":            "europe/hungary",
-	"de":            "europe/germany",
-	"nl":            "europe/netherlands",
-	"at":            "europe/austria",
-	"ch":            "europe/switzerland-liechtenstein",
-	"fr":            "europe/france-monacco",
-	"it":            "europe/italy",
-	"es":            "europe/spain",
-	"uk":            "europe/british-islands",
-	"sk":            "europe/slovakia",
-	"ro":            "europe/romania",
-	"pl":            "europe/poland",
-	"cz":            "europe/czech-republic",
-	"us":            "north-america/usa",
-	"ca":            "north-america/canada",
+	"planet":            "",
+	"europe":            "europe",
+	"north-america":     "north-america",
+	"south-america":     "south-america",
+	"africa":            "africa",
+	"asia":              "asia",
+	"australia-oceania": "australia-oceania",
+
+	// Europe
+	"hu": "europe/hungary",
+	"de": "europe/germany",
+	"nl": "europe/netherlands",
+	"at": "europe/austria",
+	"ch": "europe/switzerland-liechtenstein",
+	"fr": "europe/france-monacco",
+	"it": "europe/italy",
+	"es": "europe/spain",
+	"uk": "europe/british-islands",
+	"sk": "europe/slovakia",
+	"ro": "europe/romania",
+	"pl": "europe/poland",
+	"cz": "europe/czech-republic",
+
+	// North America
+	"us": "north-america/usa",
+	"ca": "north-america/canada",
+	"mx": "north-america/mexico",
+	"bm": "north-america/bermuda",
+	"gl": "north-america/greenland",
+
+	// South America
+	"ar": "south-america/argentina",
+	"bo": "south-america/bolivia",
+	"br": "south-america/brazil",
+	"cl": "south-america/chile",
+	"co": "south-america/colombia",
+	"ec": "south-america/ecuador",
+	"py": "south-america/paraguay",
+	"pe": "south-america/peru",
+	"uy": "south-america/uruguay",
+
+	// Africa (explicit countries listed)
+	"bi": "africa/burundi",
+	"ke": "africa/kenia",
+	"mw": "africa/malawi",
+	"mz": "africa/mozambique",
+	"ng": "africa/nigeria",
+	"rw": "africa/rwanda",
+	"sh": "africa/saint-helena",
+	"ss": "africa/south-sudan",
+	"tz": "africa/tanzania",
+	"ug": "africa/uganda",
+	"zm": "africa/zambia",
+	"zw": "africa/zimbabwe",
+
+	// Asia
+	"af": "asia/afghanistan",
+	"am": "asia/armenia",
+	"az": "asia/azerbaijan",
+	"bd": "asia/bangladesh",
+	"bt": "asia/bhutan",
+	"bn": "asia/brunei",
+	"kh": "asia/cambodia",
+	"cn": "asia/china",
+	"tl": "asia/east-timor",
+	"in": "asia/india",
+	"id": "asia/indonesia",
+	"ir": "asia/iran",
+	"iq": "asia/iraq",
+	"il": "asia/isreal", // Note: Spelled 'isreal' on GraphHopper servers
+	"jp": "asia/japan",
+	"jo": "asia/jordan",
+	"kp": "asia/korea",
+	"kr": "asia/korea",
+	"la": "asia/laos",
+	"lb": "asia/lebanon",
+	"my": "asia/malaysia",
+	"mn": "asia/mongolia",
+	"mm": "asia/myanmar",
+	"np": "asia/nepal",
+	"pk": "asia/pakistan",
+	"ps": "asia/palestine",
+	"ph": "asia/philippines",
+	"sg": "asia/singapore",
+	"sy": "asia/syria",
+	"tw": "asia/taiwan",
+	"th": "asia/thailand",
+	"vn": "asia/vietnam",
+
+	// Australia-Oceania
+	"au": "australia-oceania/australia",
+	"nz": "australia-oceania/new-zealand",
 }
 
 type BatchItem struct {
@@ -190,7 +264,6 @@ func drawProgressBar(current, total int64, prefix string, startTime time.Time) {
 		etaStr = " | ETA: Calculating..."
 	}
 
-	// \r returns to start of line, \033[K clears the old content to prevent ghosting
 	fmt.Printf("\r%s%s [%s] %.2f%%%s%s", ClearLine, prefix, bar, progress*100, etaStr, ColorReset)
 	if current >= total {
 		fmt.Println()
@@ -218,7 +291,6 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 	totalMB := float64(pr.Total) / (1024 * 1024)
 	prefix := fmt.Sprintf("%s[Downloading %s] %.2f / %.2f MB", ColorYellow, pr.MapName, currentMB, totalMB)
 	
-	// Only redraw fast enough to look smooth, handled internally by printing \r
 	drawProgressBar(pr.Current, pr.Total, prefix, pr.StartTime)
 
 	return n, err
@@ -317,7 +389,9 @@ func checkAndDownloadUpdate(cfg *Config) {
 		_, zstStatErr := os.Stat(localZstPath)
 
 		if localMD5 != remoteMD5 || zstStatErr != nil {
-			logger.Printf("%s[+] New update found for %s! Downloading...%s", ColorGreen, mapCode, ColorReset)
+			logger.Printf("%s[+] New update found for %s!%s", ColorGreen, mapCode, ColorReset)
+			logger.Printf("%s[i] Downloading from: %s%s", ColorCyan, url, ColorReset)
+			
 			getResp, err := http.Get(url)
 			if err != nil || getResp.StatusCode != 200 {
 				logger.Printf("%s[!] Error downloading map %s.%s", ColorRed, mapCode, ColorReset)
@@ -631,7 +705,6 @@ func buildDBFromFiles(zstPaths []string, cfg *Config, newManifest map[string]str
 
 	logger.Printf("%s[*] Finalizing database (syncing data to disk, please wait)...%s", ColorYellow, ColorReset)
 	
-	// CRITICAL FIX: Properly close the new database to flush it to disk BEFORE renaming!
 	err = newDB.Close()
 	if err != nil {
 		logger.Printf("%s[!] Error closing temporary database: %v%s", ColorRed, err, ColorReset)
