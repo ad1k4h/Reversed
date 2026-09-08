@@ -1,0 +1,23 @@
+{
+	"server": {
+		"_comment_db_path": "Database file stored neatly inside the database folder.",
+		"db_path": "database/geocoder.db",
+
+		"_comment_port": "The port on which the HTTP server listens.",
+		"port": ":2322",
+
+		"_comment_log_level": "0: Silent, 1: Console, 2: Console + database/reversed.log file.",
+		"log_level": 1,
+
+		"_comment_max_memory": "Memory limit for GC.",
+		"max_memory": "8GB",
+
+		"_comment_compression": "0: None, 1: Snappy (Recommended), 2: Gzip.",
+		"compression_method": 1
+	},
+	
+	"_comment_maps": "Selected maps. Dumps are downloaded to the /dumps folder, automatically unpacked, and the .zst archives are deleted after import (retaining only .md5 hashes for change checking).",
+	"maps": [
+		"hu"
+	]
+}
